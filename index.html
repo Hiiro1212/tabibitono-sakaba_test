@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>たびびとたちのさかば</title>
+    <style>
+        /* --- 基本設定 --- */
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: "Helvetica Neue", Arial, sans-serif;
+            color: #e0e0e0;
+            background-color: #0d0d0d;
+            overflow-x: hidden;
+            text-shadow: 0 0 4px rgba(255, 255, 255, 0.3);
+        }
+
+        /* --- 背景画像の処理 --- */
+        .bg-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -2;
+            overflow: hidden;
+        }
+        .bg-image {
+            width: 100%;
+            height: 100%;
+            background-image: url('1.png'); 
+            background-size: cover;
+            background-position: center;
+            transform: scale(1.1) translateY(2%);
+            filter: blur(3px) brightness(0.35);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 60px;
+        }
+        .site-logo {
+            max-width: 800px;
+            width: 90%;
+            height: auto;
+            filter: drop-shadow(0 0 10px rgba(0,0,0,0.8));
+            display: block;
+            margin: 0 auto;
+        }
+
+        /* --- メインメニュー (5列表示) --- */
+        .main-menu {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 15px;
+            max-width: 1300px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        @media (max-width: 1100px) {
+            .main-menu { grid-template-columns: repeat(3, 1fr); }
+        }
+        @media (max-width: 700px) {
+            .main-menu { grid-template-columns: repeat(2, 1fr); }
+        }
+
+        .menu-item { text-align: center; cursor: pointer; transition: transform 0.3s; }
+        .menu-item:hover { transform: scale(1.1); }
+        .icon-bg {
+            background-color: rgba(0, 0, 0, 0.6); border-radius: 20px; padding: 15px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.8); border: 1px solid #444; transition: border-color 0.3s;
+        }
+        .menu-item:hover .icon-bg { border-color: #ffcc66; }
+        .menu-icon { width: 100%; max-width: 100px; height: auto; display: block; margin: 0 auto; }
+        .menu-label {
+            margin-top: 15px; font-size: 1rem; color: #ffcc66; font-weight: bold;
+            line-height: 1.4; text-shadow: 0 0 8px rgba(255, 204, 102, 0.7);
+        }
+
+        /* --- 各画面共通 --- */
+        .sub-screen {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100vh;
+            z-index: 200; overflow-y: auto; background-color: #000; padding-bottom: 50px;
+        }
+        .screen-bg {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-size: cover; background-position: center; z-index: -1; filter: brightness(0.5);
+        }
+        #tarot-screen .screen-bg { background-image: url('tarot_BG.png'); }
+        #search-screen .screen-bg { background-image: url('search_BG.png'); }
+        #book-screen .screen-bg { background-image: url('book_BG.png'); }
+        #lobby-screen .screen-bg { background-image: url('lobby_BG.png'); }
+        #bag-screen .screen-bg { background-image: url('bag_BG.png'); }
+
+        /* ナビゲーション & 時計 */
+        .nav-header { position: fixed; top: 20px; left: 20px; z-index: 300; display: flex; gap: 10px; }
+        .nav-btn {
+            padding: 8px 16px; background: rgba(0,0,0,0.8); color: #fff; border: 1px solid #ffcc66;
+            border-radius: 5px; cursor: pointer; font-size: 0.9rem; transition: 0.2s;
+            box-shadow: 0 0 5px rgba(0,0,0,0.5);
+        }
+        .nav-btn:hover { background: #ffcc66; color: #000; }
+
+        .clock-display {
+            position: fixed; top: 20px; right: 20px; z-index: 300;
+            color: #ffcc66; font-size: 1.5rem; font-weight: bold; font-family: monospace;
+            text-shadow: 0 0 5px #000, 0 0 10px rgba(255, 204, 102, 0.5);
+            background: rgba(0,0,0,0.4); padding: 5px 15px; border-radius: 10px; border: 1px solid #444;
+        }
+
+        /* --- UIパーツ --- */
+        .search-area-centered { display: flex; gap: 15px; justify-content: center; margin-bottom: 20px; flex-wrap: wrap; }
+        .search-input-base { padding: 12px; background: rgba(30,30,30,0.95); border: 1px solid #ffcc66; color: #fff; border-radius: 5px; width: 300px; }
+        .tag-list { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; max-width: 1000px; margin: 0 auto 30px auto; }
+        .search-tag { background: rgba(40, 40, 40, 0.8); border: 1px solid #666; padding: 6px 14px; border-radius: 20px; cursor: pointer; transition: 0.2s; font-size: 0.85rem; }
+        .search-tag:hover, .search-tag.active { background: #ffcc66; color: #000; text-shadow: none; border-color: #fff; }
+
+        /* ゲームカード */
+        .game-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 25px; max-width: 1100px; margin: 0 auto; }
+        .game-card {
+            background-color: rgba(20, 20, 20, 0.95); border: 1px solid #444; border-radius: 12px; overflow: hidden; text-decoration: none; color: inherit; transition: 0.2s; display: flex; flex-direction: column; position: relative;
+        }
+        .game-card:hover { transform: translateY(-5px); border-color: #ffcc66; }
+        .game-thumb { width: 100%; aspect-ratio: 16/9; object-fit: cover; background: #000; }
+        .card-body { padding: 15px; flex-grow: 1; display: flex; flex-direction: column; }
+        
+        .spec-table { width: 100%; font-size: 0.85rem; border-collapse: collapse; margin-top: 10px; }
+        .spec-table td { padding: 4px 0; border-bottom: 1px solid #333; }
+        .spec-value { text-align: right; font-weight: bold; }
+        .time-sugu { color: #4caf50; } .time-futsu { color: #ffeb3b; } .time-nagai { color: #f44336; }
+
+        /* カード下部アクションエリア */
+        .card-footer {
+            margin-top: auto; padding-top: 15px; display: flex; align-items: center; justify-content: space-between;
+        }
+        .action-icons { display: flex; gap: 10px; }
+        
+        /* RPG風アイコンボタン */
+        .rpg-btn {
+            width: 36px; height: 36px; background: #333; border: 2px solid #555; border-radius: 8px;
+            display: flex; align-items: center; justify-content: center; cursor: pointer; position: relative;
+            transition: 0.2s;
+        }
+        .rpg-btn:hover { border-color: #ffcc66; background: #444; }
+        .rpg-btn svg { width: 20px; height: 20px; fill: #aaa; transition: 0.2s; }
+        .rpg-btn:hover svg { fill: #ffcc66; filter: drop-shadow(0 0 5px rgba(255,204,102,0.8)); }
+
+        /* ツールチップ */
+        .rpg-btn::after {
+            content: attr(data-tooltip);
+            position: absolute; bottom: 120%; left: 50%; transform: translateX(-50%);
+            background: rgba(0,0,0,0.9); border: 1px solid #ffcc66; color: #ffcc66;
+            padding: 5px 10px; font-size: 0.75rem; white-space: nowrap; border-radius: 4px;
+            opacity: 0; pointer-events: none; transition: 0.2s; z-index: 10;
+        }
+        .rpg-btn:hover::after { opacity: 1; bottom: 130%; }
+
+        .price-text { text-align: right; font-weight: bold; color: #ffcc66; font-size: 1.1rem; }
+
+        /* チャット */
+        #lobby-chat-view { display: none; animation: fadeIn 0.4s; }
+        .chat-container { background: rgba(15, 15, 15, 0.9); border: 1px solid #333; border-radius: 8px; height: 450px; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px; }
+        .chat-msg { display: flex; gap: 12px; align-items: flex-start; }
+        .chat-avatar { width: 40px; height: 40px; background: #333; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; }
+        .chat-content { display: flex; flex-direction: column; }
+        .chat-info { display: flex; align-items: baseline; gap: 10px; margin-bottom: 2px; }
+        .chat-user { font-weight: bold; color: #ffcc66; }
+        .chat-time { font-size: 0.75rem; color: #888; }
+        .chat-text { color: #eee; line-height: 1.4; word-break: break-all; }
+        .chat-input-area { margin-top: 15px; display: flex; gap: 10px; }
+        .chat-input-area input { flex-grow: 1; padding: 12px; background: #1a1a1a; border: 1px solid #444; color: #fff; border-radius: 5px; }
+        .action-btn { padding: 10px 25px; background: #ffcc66; color: #000; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; }
+
+        /* かばん */
+        .bag-tabs { display: flex; justify-content: center; gap: 20px; margin-bottom: 30px; }
+        .bag-tab-btn {
+            background: rgba(30,30,30,0.8); border: 1px solid #555; color: #aaa; padding: 10px 30px; 
+            border-radius: 30px; cursor: pointer; font-size: 1.1rem; transition: 0.3s;
+        }
+        .bag-tab-btn.active, .bag-tab-btn:hover { background: #ffcc66; color: #000; border-color: #fff; font-weight: bold; }
+        .bag-content-section { display: none; animation: fadeIn 0.4s; }
+        .bag-content-section.active { display: block; }
+        .empty-msg { text-align: center; color: #666; margin-top: 50px; }
+
+        /* タロット */
+        .tarot-grid-top { display: grid; grid-template-columns: repeat(5, 1fr); gap: 20px; max-width: 1000px; margin: 0 auto; }
+        .tarot-grid-bottom { display: flex; justify-content: center; margin-top: 20px; }
+        .tarot-card-item { cursor: pointer; transition: 0.3s; width: 160px; }
+        .tarot-card-item img { width: 100%; border-radius: 8px; }
+
+        h2 { color: #ffcc66; text-shadow: 0 0 10px rgba(255, 204, 102, 0.6); margin-bottom: 5px; }
+        .flash-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: #fff; pointer-events: none; opacity: 0; z-index: 400; }
+        .flash-active { animation: flashAnim 0.8s ease-out forwards; }
+        @keyframes flashAnim { 0% { opacity: 0; } 10% { opacity: 1; } 100% { opacity: 0; } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+    </style>
+</head>
+<body>
+
+    <div class="bg-container">
+        <div class="bg-image"></div>
+    </div>
+
+    <div class="clock-display" id="clock">00:00:00</div>
+
+    <div id="main-view" class="container">
+        <header>
+            <img src="title.png" alt="たびびとたちのさかば" class="site-logo">
+        </header>
+
+        <nav class="main-menu">
+            <div class="menu-item" onclick="openScreen('tarot-screen')">
+                <div class="icon-bg"><img src="tarot_0.png" class="menu-icon"></div>
+                <div class="menu-label">うんめいのみちびき<br>(おすすめゲーム診断)</div>
+            </div>
+            <div class="menu-item" onclick="openScreen('search-screen')">
+                <div class="icon-bg"><img src="search_0.png" class="menu-icon"></div>
+                <div class="menu-label">すいしょうのしんたく<br>(ゲーム検索)</div>
+            </div>
+            <div class="menu-item" onclick="openScreen('book-screen')">
+                <div class="icon-bg"><img src="book_0.png" class="menu-icon"></div>
+                <div class="menu-label">ぼうけんのしょ<br>(ゲームレビュー)</div>
+            </div>
+            <div class="menu-item" onclick="openScreen('lobby-screen')">
+                <div class="icon-bg"><img src="lobby_0.png" class="menu-icon"></div>
+                <div class="menu-label">つどいのけいじばん<br>（パーティ募集掲示板）</div>
+            </div>
+            <div class="menu-item" onclick="openScreen('bag-screen')">
+                <div class="icon-bg"><img src="bag_0.png" class="menu-icon"></div>
+                <div class="menu-label">かばん<br>（ライブラリ＆<br>ウィッシュリスト）</div>
+            </div>
+        </nav>
+    </div>
+
+    <div id="tarot-screen" class="sub-screen">
+        <div class="screen-bg"></div>
+        <div class="nav-header">
+            <button class="nav-btn" onclick="backToMenu()">酒場に戻る</button>
+            <button class="nav-btn" onclick="goBack('tarot')">戻る</button>
+        </div>
+        <div class="flash-overlay" id="flash-effect"></div>
+        <div class="container">
+            <div id="tarot-board" style="text-align: center;">
+                <h2>導きの手札を選びたまえ</h2>
+                <div class="tarot-grid-top" id="grid-top"></div>
+                <div class="tarot-grid-bottom" id="grid-bottom"></div>
+            </div>
+            <div id="tarot-result-area" style="display:none; text-align: center;">
+                <h2 id="result-card-name"></h2>
+                <p id="result-card-genre" style="margin-bottom:30px; color:#aaa;"></p>
+                <div id="tarot-result-list" class="game-grid"></div>
+                <button class="nav-btn" style="margin:40px auto;" onclick="resetTarot()">別のカードを選ぶ</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="search-screen" class="sub-screen">
+        <div class="screen-bg"></div>
+        <div class="nav-header">
+            <button class="nav-btn" onclick="backToMenu()">酒場に戻る</button>
+            <button class="nav-btn" onclick="backToMenu()">戻る</button>
+        </div>
+        <div class="container">
+            <div style="text-align:center; padding: 40px;"><h2>水晶が示す属性で探す</h2></div>
+            <div class="search-area-centered">
+                <input type="text" id="search-name-input" class="search-input-base" placeholder="名前で絞り込み (かな対応)..." oninput="filterSearch()">
+            </div>
+            <div id="search-tags-container" class="tag-list"></div>
+            <div id="search-result-list" class="game-grid"></div>
+        </div>
+    </div>
+
+    <div id="book-screen" class="sub-screen">
+        <div class="screen-bg"></div>
+        <div class="nav-header">
+            <button class="nav-btn" onclick="backToMenu()">酒場に戻る</button>
+            <button class="nav-btn" onclick="backToMenu()">戻る</button>
+        </div>
+        <div class="container">
+            <div style="text-align:center; padding: 40px;"><h2>ぼうけんのしょ</h2></div>
+            <p style="text-align: center;">編纂中...</p>
+        </div>
+    </div>
+
+    <div id="lobby-screen" class="sub-screen">
+        <div class="screen-bg"></div>
+        <div class="nav-header">
+            <button class="nav-btn" onclick="backToMenu()">酒場に戻る</button>
+            <button class="nav-btn" onclick="goBack('lobby')">戻る</button>
+        </div>
+        <div class="container">
+            <div id="lobby-entrance-view">
+                <div style="text-align:center; padding: 40px;"><h2>つどいのけいじばん</h2><p>ロビーを選んで参加せよ</p></div>
+                <div class="search-area-centered">
+                    <input type="text" id="lobby-name-input" class="search-input-base" placeholder="名前で絞り込み (かな対応)..." oninput="filterLobby()">
+                </div>
+                <div id="lobby-tags-container" class="tag-list"></div>
+                <div id="lobby-list" class="game-grid"></div>
+            </div>
+
+            <div id="lobby-chat-view">
+                <div class="lobby-header">
+                    <h3 id="current-lobby-name">ゲーム名</h3>
+                </div>
+                <div id="chat-window" class="chat-container"></div>
+                <div class="chat-input-area">
+                    <input type="text" id="chat-user" placeholder="名無しさん" style="width:120px; flex-grow:0;">
+                    <input type="text" id="chat-msg" placeholder="メッセージを入力..." onkeydown="if(event.key==='Enter') sendMessage()">
+                    <button class="action-btn" onclick="sendMessage()">送信</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="bag-screen" class="sub-screen">
+        <div class="screen-bg"></div>
+        <div class="nav-header">
+            <button class="nav-btn" onclick="backToMenu()">酒場に戻る</button>
+            <button class="nav-btn" onclick="backToMenu()">戻る</button>
+        </div>
+        <div class="container">
+            <div style="text-align:center; padding: 40px;"><h2>旅人のカバン</h2></div>
+            <div class="bag-tabs">
+                <div class="bag-tab-btn active" onclick="switchBagTab('owned')">所持済み</div>
+                <div class="bag-tab-btn" onclick="switchBagTab('wish')">欲しい</div>
+                <div class="bag-tab-btn" onclick="switchBagTab('fav')">お気に入り</div>
+            </div>
+            <div id="bag-owned" class="bag-content-section active"><div class="empty-msg">まだ登録されたゲームはありません。</div></div>
+            <div id="bag-wish" class="bag-content-section"><div class="empty-msg" id="bag-wish-list">欲しいものリストは空です。</div></div>
+            <div id="bag-fav" class="bag-content-section"><div class="empty-msg">お気に入りのゲームはまだありません。</div></div>
+        </div>
+    </div>
+
+    <script>
+        // --- ゲームデータ 100+ (oneCopy追加) ---
+        // oneCopy: true = ソフト1本で全員プレイ可能 (Remote Play Together / Friend's Pass)
+        const gamesData = [
+            { title: "Apex Legends", kana: "えーぺっくすれじぇんず", imageId: "1172470", price: 0, sizeGB: 75, crossplay: true, vc: true, oneCopy: false, tags: ["FPS", "バトルロイヤル", "復活・逆転", "対戦"] },
+            { title: "Among Us", kana: "あもんぐあす", imageId: "945360", price: 580, sizeGB: 1, crossplay: true, vc: true, oneCopy: false, tags: ["正体隠匿", "協力"] },
+            { title: "Counter-Strike 2", kana: "かうんたーすとらいく", imageId: "730", price: 0, sizeGB: 60, crossplay: false, vc: true, oneCopy: false, tags: ["FPS", "対戦"] },
+            { title: "The Finals", kana: "ざふぁいなるず", imageId: "2073850", price: 0, sizeGB: 20, crossplay: true, vc: true, oneCopy: false, tags: ["FPS", "対戦", "破壊"] },
+            { title: "Dota 2", kana: "どーた2", imageId: "570", price: 0, sizeGB: 45, crossplay: false, vc: true, oneCopy: false, tags: ["ストラテジー", "対戦"] },
+            { title: "PUBG: BATTLEGROUNDS", kana: "ぱぶじー", imageId: "578080", price: 0, sizeGB: 40, crossplay: true, vc: true, oneCopy: false, tags: ["FPS", "バトルロイヤル", "対戦"] },
+            { title: "Destiny 2", kana: "ですてぃにー2", imageId: "1085660", price: 0, sizeGB: 100, crossplay: true, vc: true, oneCopy: false, tags: ["FPS", "レイド", "育成"] },
+            { title: "Warframe", kana: "うぉーふれーむ", imageId: "230410", price: 0, sizeGB: 50, crossplay: true, vc: true, oneCopy: false, tags: ["アクション", "協力", "育成"] },
+            { title: "Team Fortress 2", kana: "ちーむふぉーとれす2", imageId: "440", price: 0, sizeGB: 15, crossplay: false, vc: true, oneCopy: false, tags: ["FPS", "対戦"] },
+            { title: "Rust", kana: "らすと", imageId: "252490", price: 5200, sizeGB: 25, crossplay: true, vc: true, oneCopy: false, tags: ["サバイバル", "対戦", "攻城戦"] },
+            { title: "War Thunder", kana: "うぉーさんだー", imageId: "236390", price: 0, sizeGB: 45, crossplay: true, vc: false, oneCopy: false, tags: ["対戦", "スポーツ"] },
+            { title: "Naraka: Bladepoint", kana: "ならか", imageId: "1203220", price: 0, sizeGB: 35, crossplay: true, vc: true, oneCopy: false, tags: ["対戦", "バトルロイヤル"] },
+            { title: "Monster Hunter: World", kana: "もんはんわーるど", imageId: "582010", price: 2990, sizeGB: 52, crossplay: false, vc: false, oneCopy: false, tags: ["レイド", "協力", "アクション"] },
+            { title: "Monster Hunter Rise", kana: "もんはんらいず", imageId: "1446780", price: 3990, sizeGB: 23, crossplay: false, vc: false, oneCopy: false, tags: ["レイド", "協力", "アクション"] },
+            { title: "Palworld", kana: "ぱるわーるど", imageId: "1623730", price: 3400, sizeGB: 40, crossplay: true, vc: false, oneCopy: false, tags: ["育成", "サバイバル", "オープンワールド"] },
+            { title: "Dead by Daylight", kana: "でっどばいだいらいと", imageId: "381210", price: 1980, sizeGB: 50, crossplay: true, vc: false, oneCopy: false, tags: ["非対称対戦", "ホラー", "対戦"] },
+            { title: "Left 4 Dead 2", kana: "れふとふぉーでっど2", imageId: "550", price: 1200, sizeGB: 13, crossplay: false, vc: false, oneCopy: false, tags: ["ゾンビ", "協力", "FPS"] },
+            { title: "Terraria", kana: "てらりあ", imageId: "105600", price: 1200, sizeGB: 0.5, crossplay: true, vc: false, oneCopy: false, tags: ["クラフト", "探索", "2D"] },
+            { title: "Stardew Valley", kana: "すたーでゅーばれー", imageId: "413150", price: 1480, sizeGB: 1, crossplay: true, vc: false, oneCopy: false, tags: ["クラフト", "育成"] },
+            { title: "Valheim", kana: "ばるへいむ", imageId: "892970", price: 2050, sizeGB: 2, crossplay: true, vc: false, oneCopy: false, tags: ["サバイバル", "クラフト", "探索"] },
+            { title: "Grand Theft Auto V", kana: "ぐらんどせふとおーと", imageId: "271590", price: 4850, sizeGB: 100, crossplay: false, vc: true, oneCopy: false, tags: ["オープンワールド", "対戦", "レース"] },
+            { title: "Tom Clancy's Rainbow Six Siege", kana: "れいんぼーしっくすしーじ", imageId: "359550", price: 2600, sizeGB: 60, crossplay: true, vc: true, oneCopy: false, tags: ["FPS", "対戦", "ストラテジー"] },
+            { title: "Baldur's Gate 3", kana: "ばるだーずげーと3", imageId: "1086940", price: 8500, sizeGB: 150, crossplay: true, vc: false, oneCopy: false, tags: ["RPG", "協力", "ストラテジー"] },
+            { title: "Unturned", kana: "あんたーんど", imageId: "304930", price: 0, sizeGB: 4, crossplay: false, vc: true, oneCopy: false, tags: ["サバイバル", "ゾンビ", "クラフト"] },
+            { title: "7 Days to Die", kana: "せぶんでいずとぅだい", imageId: "251570", price: 5980, sizeGB: 15, crossplay: true, vc: false, oneCopy: false, tags: ["サバイバル", "ゾンビ", "クラフト"] },
+            { title: "ARK: Survival Ascended", kana: "あーく", imageId: "2399830", price: 6000, sizeGB: 80, crossplay: true, vc: true, oneCopy: false, tags: ["サバイバル", "育成", "オープンワールド"] },
+            { title: "Don't Starve Together", kana: "どんすた", imageId: "322330", price: 1480, sizeGB: 3, crossplay: false, vc: false, oneCopy: false, tags: ["サバイバル", "協力", "クラフト"] },
+            { title: "Phasmophobia", kana: "ふぁずもふぉびあ", imageId: "739630", price: 1420, sizeGB: 20, crossplay: true, vc: true, oneCopy: false, tags: ["ホラー", "探索", "協力"] },
+            { title: "Lethal Company", kana: "りーさるかんぱにー", imageId: "1966720", price: 1200, sizeGB: 1, crossplay: false, vc: true, oneCopy: false, tags: ["ホラー", "探索", "協力"] },
+            { title: "Content Warning", kana: "こんてんとわーにんぐ", imageId: "2881650", price: 920, sizeGB: 2, crossplay: false, vc: true, oneCopy: false, tags: ["ホラー", "メタバース", "協力"] },
+            { title: "Sea of Thieves", kana: "しーおぶしーぶす", imageId: "1172620", price: 4200, sizeGB: 50, crossplay: true, vc: true, oneCopy: false, tags: ["オープンワールド", "探索", "対戦"] },
+            { title: "Project Zomboid", kana: "ぷろじぇくとぞんぼいど", imageId: "108600", price: 2300, sizeGB: 5, crossplay: false, vc: false, oneCopy: false, tags: ["サバイバル", "オープンワールド"] },
+            { title: "Raft", kana: "らふと", imageId: "648800", price: 1980, sizeGB: 10, crossplay: false, vc: false, oneCopy: false, tags: ["サバイバル", "クラフト"] },
+            { title: "The Forest", kana: "ざふぉれすと", imageId: "242760", price: 2050, sizeGB: 5, crossplay: false, vc: false, oneCopy: false, tags: ["サバイバル", "ホラー"] },
+            { title: "Sons of the Forest", kana: "さんずおぶざふぉれすと", imageId: "1326470", price: 3400, sizeGB: 20, crossplay: false, vc: true, oneCopy: false, tags: ["サバイバル", "ホラー", "クラフト"] },
+            { title: "Garry's Mod", kana: "ぎゃりーずもっど", imageId: "4000", price: 1200, sizeGB: 5, crossplay: false, vc: true, oneCopy: false, tags: ["メタバース", "サンドボックス"] },
+            { title: "Deep Rock Galactic", kana: "でぃーぷろっく", imageId: "548430", price: 3000, sizeGB: 6, crossplay: true, vc: true, oneCopy: false, tags: ["協力", "FPS", "レイド"] },
+            { title: "Euro Truck Simulator 2", kana: "ゆーろとらっく", imageId: "227300", price: 2400, sizeGB: 12, crossplay: false, vc: false, oneCopy: false, tags: ["レース", "カジュアル"] },
+            { title: "VRChat", kana: "ぶいあーるちゃっと", imageId: "438100", price: 0, sizeGB: 1, crossplay: true, vc: true, oneCopy: false, tags: ["メタバース", "カジュアル"] },
+            { title: "Dead Island 2", kana: "でっどあいらんど2", imageId: "934700", price: 7700, sizeGB: 70, crossplay: true, vc: true, oneCopy: false, tags: ["ゾンビ", "協力"] },
+            { title: "It Takes Two", kana: "いっとていくすつー", imageId: "1426210", price: 4300, sizeGB: 45, crossplay: true, vc: true, oneCopy: true, tags: ["協力", "パズル"] },
+            { title: "Cuphead", kana: "かっぷへっど", imageId: "268910", price: 1980, sizeGB: 4, crossplay: false, vc: false, oneCopy: true, tags: ["協力", "アクション"] },
+            { title: "Castle Crashers", kana: "きゃっするくらっしゅ", imageId: "204360", price: 1700, sizeGB: 1, crossplay: true, vc: false, oneCopy: true, tags: ["協力", "アクション"] },
+            { title: "BattleBit Remastered", kana: "ばとるびっと", imageId: "671860", price: 1500, sizeGB: 2, crossplay: false, vc: true, oneCopy: false, tags: ["FPS", "対戦"] },
+            { title: "PAYDAY 2", kana: "ぺいでい2", imageId: "218620", price: 1200, sizeGB: 80, crossplay: false, vc: false, oneCopy: false, tags: ["協力", "FPS", "強盗"] },
+            { title: "PAYDAY 3", kana: "ぺいでい3", imageId: "1272080", price: 4600, sizeGB: 50, crossplay: true, vc: true, oneCopy: false, tags: ["協力", "FPS", "強盗"] },
+            { title: "Borderlands 2", kana: "ぼーだーらんず2", imageId: "49520", price: 2000, sizeGB: 20, crossplay: false, vc: false, oneCopy: false, tags: ["FPS", "協力", "RPG"] },
+            { title: "Borderlands 3", kana: "ぼーだーらんず3", imageId: "397540", price: 7000, sizeGB: 75, crossplay: true, vc: false, oneCopy: false, tags: ["FPS", "協力", "RPG"] },
+            { title: "Sid Meier's Civilization VI", kana: "しびらいぜーしょん", imageId: "289070", price: 7000, sizeGB: 12, crossplay: true, vc: false, oneCopy: false, tags: ["ストラテジー", "対戦"] },
+            { title: "Hearts of Iron IV", kana: "はーつおぶあいあん", imageId: "394360", price: 5400, sizeGB: 5, crossplay: false, vc: false, oneCopy: false, tags: ["ストラテジー", "対戦"] },
+            { title: "Stellaris", kana: "すてらりす", imageId: "281990", price: 4400, sizeGB: 10, crossplay: true, vc: false, oneCopy: false, tags: ["ストラテジー", "宇宙"] },
+            { title: "Factorio", kana: "ふぁくとりお", imageId: "427520", price: 4000, sizeGB: 3, crossplay: false, vc: false, oneCopy: false, tags: ["クラフト", "ストラテジー"] },
+            { title: "Satisfactory", kana: "さてぃすふぁくとりー", imageId: "526870", price: 3400, sizeGB: 15, crossplay: false, vc: false, oneCopy: false, tags: ["クラフト", "探索"] },
+            { title: "Overcooked! 2", kana: "おーばーくっく2", imageId: "728880", price: 2570, sizeGB: 3, crossplay: true, vc: true, oneCopy: true, tags: ["協力", "パズル", "リズム"] },
+            { title: "PlateUp!", kana: "ぷれーとあっぷ", imageId: "1593500", price: 2300, sizeGB: 2, crossplay: false, vc: false, oneCopy: true, tags: ["協力", "ストラテジー"] },
+            { title: "Human: Fall Flat", kana: "ひゅーまんふぉーるふらっと", imageId: "477160", price: 2050, sizeGB: 2, crossplay: true, vc: false, oneCopy: true, tags: ["パズル", "協力"] },
+            { title: "Golf With Your Friends", kana: "ごるふ", imageId: "431240", price: 1520, sizeGB: 4, crossplay: true, vc: false, oneCopy: true, tags: ["スポーツ", "レース"] },
+            { title: "Golf It!", kana: "ごるふいっと", imageId: "571740", price: 920, sizeGB: 3, crossplay: false, vc: false, oneCopy: false, tags: ["スポーツ", "レース"] },
+            { title: "Ultimate Chicken Horse", kana: "あるてぃめっとちきんほーす", imageId: "386940", price: 1480, sizeGB: 2, crossplay: true, vc: false, oneCopy: true, tags: ["対戦", "パズル"] },
+            { title: "Pummel Party", kana: "ぱめるぱーてぃ", imageId: "880940", price: 1520, sizeGB: 2, crossplay: false, vc: true, oneCopy: true, tags: ["対戦", "カジノ"] },
+            { title: "Party Animals", kana: "ぱーてぃあにまるず", imageId: "1260320", price: 2100, sizeGB: 10, crossplay: true, vc: true, oneCopy: false, tags: ["対戦", "物理演算"] },
+            { title: "Gang Beasts", kana: "ぎゃんぐびーすと", imageId: "285900", price: 1980, sizeGB: 2, crossplay: true, vc: false, oneCopy: true, tags: ["対戦", "物理演算"] },
+            { title: "Rubber Bandits", kana: "らばーばんでぃっつ", imageId: "1206610", price: 1100, sizeGB: 2, crossplay: true, vc: false, oneCopy: true, tags: ["対戦", "物理演算"] },
+            { title: "Stick Fight: The Game", kana: "すてぃっくふぁいと", imageId: "674940", price: 520, sizeGB: 0.5, crossplay: false, vc: false, oneCopy: true, tags: ["対戦"] },
+            { title: "Brawlhalla", kana: "ぶろうるはら", imageId: "291550", price: 0, sizeGB: 1, crossplay: true, vc: false, oneCopy: false, tags: ["対戦", "アクション"] },
+            { title: "Goose Goose Duck", kana: "ぐーすぐーすだっく", imageId: "983870", price: 0, sizeGB: 1, crossplay: true, vc: true, oneCopy: false, tags: ["正体隠匿", "クイズ"] },
+            { title: "SCP: Secret Laboratory", kana: "えすしーぴー", imageId: "719040", price: 0, sizeGB: 4, crossplay: false, vc: true, oneCopy: false, tags: ["ホラー", "対戦"] },
+            { title: "Barotrauma", kana: "ばろとらうま", imageId: "602960", price: 4200, sizeGB: 1, crossplay: false, vc: true, oneCopy: false, tags: ["サバイバル", "協力", "探索"] },
+            { title: "We Were Here Forever", kana: "うぃーあーひあふぉーえばー", imageId: "1341290", price: 1980, sizeGB: 25, crossplay: true, vc: true, oneCopy: false, tags: ["パズル", "協力"] },
+            { title: "Portal 2", kana: "ぽーたる2", imageId: "620", price: 1200, sizeGB: 8, crossplay: false, vc: true, oneCopy: true, tags: ["パズル", "協力"] },
+            { title: "Bread & Fred", kana: "ぶれっどあんどふれっど", imageId: "1607680", price: 1700, sizeGB: 1, crossplay: false, vc: false, oneCopy: true, tags: ["協力", "パズル"] },
+            { title: "Biped", kana: "ばいぺっど", imageId: "1071870", price: 1520, sizeGB: 2, crossplay: true, vc: false, oneCopy: true, tags: ["協力", "パズル"] },
+            { title: "Unrailed!", kana: "あんれいるど", imageId: "1016920", price: 2350, sizeGB: 2, crossplay: true, vc: false, oneCopy: true, tags: ["協力", "レース"] },
+            { title: "Heave Ho", kana: "ひーぶほー", imageId: "905340", price: 1150, sizeGB: 1, crossplay: false, vc: false, oneCopy: true, tags: ["協力", "物理演算"] },
+            { title: "PICO PARK", kana: "ぴこぱーく", imageId: "1509960", price: 520, sizeGB: 0.2, crossplay: false, vc: false, oneCopy: true, tags: ["協力", "パズル"] },
+            { title: "Keep Talking and Nobody Explodes", kana: "きーぷとーきんぐ", imageId: "341800", price: 1500, sizeGB: 1, crossplay: false, vc: true, oneCopy: true, tags: ["パズル", "協力"] },
+            { title: "Tabletop Simulator", kana: "てーぶるとっぷ", imageId: "286160", price: 1980, sizeGB: 3, crossplay: false, vc: true, oneCopy: true, tags: ["カジノ", "パズル", "協力"] },
+            { title: "Core Keeper", kana: "こあきーぱー", imageId: "1621690", price: 2300, sizeGB: 1, crossplay: true, vc: false, oneCopy: false, tags: ["クラフト", "探索"] },
+            { title: "Enshrouded", kana: "えんしゅらうど", imageId: "1203620", price: 3400, sizeGB: 30, crossplay: false, vc: false, oneCopy: false, tags: ["サバイバル", "オープンワールド", "クラフト"] },
+            { title: "Smalland: Survive the Wilds", kana: "すもーらんど", imageId: "768200", price: 3400, sizeGB: 20, crossplay: false, vc: false, oneCopy: false, tags: ["サバイバル", "探索"] },
+            { title: "Grounded", kana: "ぐらうんでっど", imageId: "962130", price: 4200, sizeGB: 8, crossplay: true, vc: true, oneCopy: false, tags: ["サバイバル", "クラフト"] },
+            { title: "No Man's Sky", kana: "のーまんずすかい", imageId: "275850", price: 6500, sizeGB: 15, crossplay: true, vc: true, oneCopy: false, tags: ["オープンワールド", "探索", "クラフト"] },
+            { title: "Astroneer", kana: "あすとろにーあ", imageId: "361420", price: 3000, sizeGB: 4, crossplay: true, vc: false, oneCopy: false, tags: ["探索", "クラフト"] },
+            { title: "Risk of Rain 2", kana: "りすくおぶれいん2", imageId: "632360", price: 2570, sizeGB: 4, crossplay: true, vc: false, oneCopy: false, tags: ["アクション", "レイド"] },
+            { title: "Gunfire Reborn", kana: "がんふぁいあ", imageId: "1268750", price: 2050, sizeGB: 4, crossplay: true, vc: true, oneCopy: false, tags: ["協力", "FPS"] },
+            { title: "Crab Game", kana: "くらぶげーむ", imageId: "1782210", price: 0, sizeGB: 2, crossplay: false, vc: true, oneCopy: false, tags: ["対戦", "パズル"] },
+            { title: "Omega Strikers", kana: "おめがすとらいかーず", imageId: "1869590", price: 0, sizeGB: 4, crossplay: true, vc: false, oneCopy: false, tags: ["スポーツ", "対戦"] },
+            { title: "Street Fighter 6", kana: "すとりーとふぁいたー6", imageId: "1364780", price: 7990, sizeGB: 60, crossplay: true, vc: false, oneCopy: false, tags: ["対戦", "スポーツ"] },
+            { title: "Tekken 8", kana: "てっけん8", imageId: "1778820", price: 9680, sizeGB: 100, crossplay: true, vc: false, oneCopy: false, tags: ["対戦", "スポーツ"] },
+            { title: "Remnant II", kana: "れむなんと2", imageId: "1282100", price: 5900, sizeGB: 80, crossplay: true, vc: true, oneCopy: false, tags: ["協力", "レイド"] },
+            { title: "Warhammer 40,000: Darktide", kana: "だーくたいど", imageId: "1361210", price: 5200, sizeGB: 50, crossplay: true, vc: true, oneCopy: false, tags: ["協力", "FPS", "レイド"] },
+            { title: "Warhammer: Vermintide 2", kana: "ばーみんたいど2", imageId: "552500", price: 3500, sizeGB: 65, crossplay: false, vc: false, oneCopy: false, tags: ["協力", "アクション", "レイド"] },
+            { title: "Killing Floor 2", kana: "きりんぐふろあ2", imageId: "232090", price: 2980, sizeGB: 80, crossplay: true, vc: false, oneCopy: false, tags: ["ゾンビ", "FPS", "協力"] },
+            { title: "Back 4 Blood", kana: "ばっくふぉーぶらっど", imageId: "924970", price: 8580, sizeGB: 40, crossplay: true, vc: true, oneCopy: false, tags: ["ゾンビ", "協力", "FPS"] },
+            { title: "Aliens: Fireteam Elite", kana: "えいりあん", imageId: "1206560", price: 3100, sizeGB: 30, crossplay: true, vc: true, oneCopy: false, tags: ["協力", "FPS"] },
+            { title: "The Outlast Trials", kana: "あうとらすと", imageId: "1304930", price: 3400, sizeGB: 30, crossplay: true, vc: true, oneCopy: false, tags: ["ホラー", "協力"] },
+            { title: "Devour", kana: "でゔぁうあ", imageId: "1274570", price: 620, sizeGB: 8, crossplay: false, vc: true, oneCopy: false, tags: ["ホラー", "協力"] },
+            { title: "Pacify", kana: "ぱしふぁい", imageId: "967050", price: 620, sizeGB: 5, crossplay: false, vc: true, oneCopy: false, tags: ["ホラー", "協力"] },
+            { title: "Among Us VR", kana: "あもんぐあすVR", imageId: "1849900", price: 1200, sizeGB: 2, crossplay: true, vc: true, oneCopy: false, tags: ["正体隠匿", "VR"] },
+            { title: "Abiotic Factor", kana: "あばいおてぃっく", imageId: "427410", price: 3000, sizeGB: 10, crossplay: false, vc: true, oneCopy: false, tags: ["サバイバル", "クラフト"] },
+            { title: "Chivalry 2", kana: "しぱるりー2", imageId: "1824220", price: 4100, sizeGB: 20, crossplay: true, vc: false, oneCopy: false, tags: ["対戦", "攻城戦"] },
+            { title: "Mordhau", kana: "もるだう", imageId: "629760", price: 3400, sizeGB: 40, crossplay: false, vc: false, oneCopy: false, tags: ["対戦", "攻城戦"] }
+        ];
+
+        // --- ロジック ---
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('clock').innerText = now.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        function getInstallTime(size) {
+            if (size <= 3) return { text: "すぐ", class: "time-sugu" };
+            if (size <= 10) return { text: "ふつう", class: "time-futsu" };
+            return { text: "ながい", class: "time-nagai" };
+        }
+
+        // ゲームカード生成 (ボタン付き)
+        function createGameCard(game, type) {
+            const time = getInstallTime(game.sizeGB);
+            const priceText = game.price === 0 ? "基本無料" : `¥${game.price.toLocaleString()}`;
+            
+            // カードクリック時の動作（ロビーかどうかで分岐）
+            let mainLinkAttr = `href="https://store.steampowered.com/app/${game.imageId}/" target="_blank"`;
+            if (type === 'lobby') {
+                mainLinkAttr = `href="javascript:void(0)" onclick="enterLobby('${game.imageId}')"`;
+            }
+
+            return `
+                <div class="game-card">
+                    <a ${mainLinkAttr} style="text-decoration:none; color:inherit; display:block;">
+                        <img src="https://cdn.akamai.steamstatic.com/steam/apps/${game.imageId}/header.jpg" class="game-thumb" onerror="this.src='https://placehold.jp/24/333333/ffffff/300x150.png?text=No+Image'">
+                    </a>
+                    <div class="card-body">
+                        <div style="font-weight:bold; font-size:1.1rem; color:#fff; margin-bottom:8px;">${game.title}</div>
+                        <div style="margin-bottom:10px;">${game.tags.map(t => `<span style="display:inline-block; background:#333; padding:2px 6px; font-size:0.75rem; border-radius:3px; margin:2px;">${t}</span>`).join('')}</div>
+                        
+                        <table class="spec-table">
+                            <tr><td>クロスプレイ</td><td class="spec-value">${game.crossplay ? '⭕' : '❌'}</td></tr>
+                            <tr><td>ソフト1本で全員プレイ可能</td><td class="spec-value">${game.oneCopy ? '⭕' : '❌'}</td></tr>
+                            <tr><td>ボイチャ必須</td><td class="spec-value">${game.vc ? '⭕' : '❌'}</td></tr>
+                            <tr><td>インストール</td><td class="spec-value ${time.class}">${time.text}</td></tr>
+                        </table>
+
+                        <div class="card-footer">
+                            <div class="action-icons">
+                                <div class="rpg-btn" data-tooltip="ウィッシュリストに追加" onclick="addToWishlist('${game.title}')">
+                                    <svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                                </div>
+                                <div class="rpg-btn" data-tooltip="今すぐチャットに参加" onclick="enterLobby('${game.imageId}')">
+                                    <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
+                                </div>
+                            </div>
+                            <div class="price-text">${priceText}</div>
+                        </div>
+                    </div>
+                </div>`;
+        }
+
+        // --- ウィッシュリスト機能 (簡易版) ---
+        function addToWishlist(title) {
+            const list = document.getElementById('bag-wish-list');
+            if(list.innerText === "欲しいものリストは空です。") {
+                list.innerText = "";
+            }
+            // 重複チェックなどは省略、単純追加
+            const item = document.createElement('div');
+            item.style.padding = "5px";
+            item.style.borderBottom = "1px solid #333";
+            item.innerText = `・${title}`;
+            list.appendChild(item);
+            alert(`${title} をウィッシュリストに追加しました！`);
+        }
+
+        // --- 画面管理 ---
+        function openScreen(id) {
+            document.getElementById('main-view').style.display = 'none';
+            document.getElementById(id).style.display = 'block';
+            if(id === 'tarot-screen') initTarot();
+            if(id === 'search-screen') initSearchScreen();
+            if(id === 'lobby-screen') initLobbyScreen();
+        }
+        function backToMenu() {
+            document.querySelectorAll('.sub-screen').forEach(s => s.style.display = 'none');
+            document.getElementById('main-view').style.display = 'block';
+        }
+        function goBack(context) {
+            if(context === 'tarot') {
+                if(document.getElementById('tarot-result-area').style.display === 'block') resetTarot(); else backToMenu();
+            } else if(context === 'lobby') {
+                if(document.getElementById('lobby-chat-view').style.display === 'block') exitLobby(); else backToMenu();
+            }
+        }
+
+        function switchBagTab(tabId) {
+            document.querySelectorAll('.bag-tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.bag-content-section').forEach(s => s.classList.remove('active'));
+            const tabs = { 'owned': 0, 'wish': 1, 'fav': 2 };
+            document.querySelectorAll('.bag-tab-btn')[tabs[tabId]].classList.add('active');
+            document.getElementById(`bag-${tabId}`).classList.add('active');
+        }
+
+        // 1. Tarot
+        function initTarot() {
+            const top = document.getElementById('grid-top'), bottom = document.getElementById('grid-bottom');
+            if(top.innerHTML) return;
+            const definitions = [
+                { id: 1, name: "I. 魔術師", genre: "クラフト" }, { id: 2, name: "II. 女教皇", genre: "正体隠匿" },
+                { id: 3, name: "III. 女帝", genre: "育成" }, { id: 4, name: "IV. 皇帝", genre: "ストラテジー" },
+                { id: 5, name: "V. 教皇", genre: "クイズ" }, { id: 6, name: "VI.恋人", genre: "協力" },
+                { id: 7, name: "VII. 戦車", genre: "レース" }, { id: 8, name: "VIII. 力", genre: "レイド" },
+                { id: 9, name: "IX. 隠者", genre: "探索" }, { id: 10, name: "X. 運命の輪", genre: "カジノ" },
+                { id: 11, name: "XI. 正義", genre: "対戦" }, { id: 12, name: "XII. 吊るされた男", genre: "パズル" },
+                { id: 13, name: "XIII. 死神", genre: "サバイバル" }, { id: 14, name: "XIV. 節制", genre: "リズム" },
+                { id: 15, name: "XV. 悪魔", genre: "非対称対戦" }, { id: 16, name: "XVI. 塔", genre: "攻城戦" },
+                { id: 17, name: "XVII. 星", genre: "オープンワールド" }, { id: 18, name: "XVIII. 月", genre: "ホラー" },
+                { id: 19, name: "XIX. 太陽", genre: "スポーツ" }, { id: 20, name: "XX. 審判", genre: "復活・逆転" },
+                { id: 21, name: "XXI. 世界", genre: "メタバース" }
+            ];
+            definitions.forEach(c => {
+                const html = `<div class="tarot-card-item" onclick="onCardClick('${c.genre}', '${c.name}')"><img src="tarot_${c.id}.png"></div>`;
+                if(c.id <= 20) top.innerHTML += html; else bottom.innerHTML += html;
+            });
+        }
+        function onCardClick(genre, name) {
+            const flash = document.getElementById('flash-effect');
+            flash.classList.add('flash-active');
+            setTimeout(() => {
+                flash.classList.remove('flash-active');
+                document.getElementById('tarot-board').style.display = 'none';
+                document.getElementById('result-card-name').innerText = name;
+                document.getElementById('result-card-genre').innerText = `導かれたジャンル: ${genre}`;
+                const matched = gamesData.filter(g => g.tags.includes(genre));
+                document.getElementById('tarot-result-list').innerHTML = matched.map(g => createGameCard(g, 'default')).join('');
+                document.getElementById('tarot-result-area').style.display = 'block';
+            }, 500);
+        }
+        function resetTarot() { document.getElementById('tarot-result-area').style.display = 'none'; document.getElementById('tarot-board').style.display = 'block'; }
+
+        // 2. Search
+        let currentSearchTag = "";
+        function initSearchScreen() {
+            const container = document.getElementById('search-tags-container');
+            if(container.innerHTML === "") {
+                const allTags = [...new Set(gamesData.flatMap(g => g.tags))];
+                container.innerHTML = allTags.map(t => `<div class="search-tag" onclick="toggleSearchTag('${t}', this)">${t}</div>`).join('');
+                filterSearch();
+            }
+        }
+        function toggleSearchTag(tag, elem) {
+            if(currentSearchTag === tag) {
+                currentSearchTag = "";
+                elem.classList.remove('active');
+            } else {
+                currentSearchTag = tag;
+                document.querySelectorAll('#search-tags-container .search-tag').forEach(e => e.classList.remove('active'));
+                elem.classList.add('active');
+            }
+            filterSearch();
+        }
+        function filterSearch() {
+            const nameVal = document.getElementById('search-name-input').value.toLowerCase();
+            const list = document.getElementById('search-result-list');
+            const results = gamesData.filter(g => {
+                const nameMatch = !nameVal || g.title.toLowerCase().includes(nameVal) || (g.kana && g.kana.includes(nameVal));
+                const tagMatch = !currentSearchTag || g.tags.includes(currentSearchTag);
+                return nameMatch && tagMatch;
+            });
+            list.innerHTML = results.map(g => createGameCard(g, 'default')).join('');
+        }
+
+        // 4. Lobby
+        let currentLobbyTag = "";
+        function initLobbyScreen() {
+            const container = document.getElementById('lobby-tags-container');
+            if(container.innerHTML === "") {
+                const allTags = [...new Set(gamesData.flatMap(g => g.tags))];
+                container.innerHTML = allTags.map(t => `<div class="search-tag" onclick="toggleLobbyTag('${t}', this)">${t}</div>`).join('');
+                filterLobby();
+            }
+        }
+        function toggleLobbyTag(tag, elem) {
+            if(currentLobbyTag === tag) {
+                currentLobbyTag = "";
+                elem.classList.remove('active');
+            } else {
+                currentLobbyTag = tag;
+                document.querySelectorAll('#lobby-tags-container .search-tag').forEach(e => e.classList.remove('active'));
+                elem.classList.add('active');
+            }
+            filterLobby();
+        }
+        function filterLobby() {
+            const nameVal = document.getElementById('lobby-name-input').value.toLowerCase();
+            const list = document.getElementById('lobby-list');
+            const results = gamesData.filter(g => {
+                const nameMatch = !nameVal || g.title.toLowerCase().includes(nameVal) || (g.kana && g.kana.includes(nameVal));
+                const tagMatch = !currentLobbyTag || g.tags.includes(currentLobbyTag);
+                return nameMatch && tagMatch;
+            });
+            list.innerHTML = results.map(g => createGameCard(g, 'lobby')).join('');
+        }
+        function enterLobby(id) {
+            // ID検索でゲーム情報を取得
+            const game = gamesData.find(g => g.imageId == id);
+            // 掲示板画面へ強制移動（もし別の画面から呼ばれた場合）
+            openScreen('lobby-screen');
+            document.getElementById('lobby-entrance-view').style.display = 'none';
+            document.getElementById('lobby-chat-view').style.display = 'block';
+            document.getElementById('current-lobby-name').innerText = `【ロビー】${game.title}`;
+            document.getElementById('chat-window').innerHTML = `<p style="color:#666; text-align:center;">${game.title} のロビーに入室しました</p>`;
+        }
+        function exitLobby() {
+            document.getElementById('lobby-entrance-view').style.display = 'block';
+            document.getElementById('lobby-chat-view').style.display = 'none';
+        }
+        function sendMessage() {
+            const user = document.getElementById('chat-user').value || "名無しさん";
+            const msg = document.getElementById('chat-msg').value;
+            if(!msg) return;
+            const now = new Date();
+            const timeStr = `${now.getFullYear()}/${now.getMonth()+1}/${now.getDate()} ${now.getHours()}:${now.getMinutes().toString().padStart(2,'0')}`;
+            const win = document.getElementById('chat-window');
+            win.innerHTML += `
+                <div class="chat-msg">
+                    <div class="chat-avatar">${user.charAt(0)}</div>
+                    <div class="chat-content">
+                        <div class="chat-info"><span class="chat-user">${user}</span><span class="chat-time">${timeStr}</span></div>
+                        <div class="chat-text">${msg}</div>
+                    </div>
+                </div>`;
+            win.scrollTop = win.scrollHeight;
+            document.getElementById('chat-msg').value = "";
+        }
+    </script>
+</body>
+</html>
